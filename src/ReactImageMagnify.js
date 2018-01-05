@@ -12,31 +12,24 @@ import Hint from './hint/DefaultHint';
 import ShadedLens from './shaded-lens';
 import ImageShape from './prop-types/ImageShape';
 import { noop } from './utils';
-import {
-    INPUT_TYPE,
-    ENLARGED_IMAGE_POSITION
-} from './constants';
+import { INPUT_TYPE, ENLARGED_IMAGE_POSITION } from './constants';
 
 class ReactImageMagnify extends React.Component {
-
     constructor(props) {
         super(props);
 
         const { primaryInput } = detectIt;
-        const {
-            mouse: MOUSE,
-            touch: TOUCH
-        } = INPUT_TYPE;
+        const { mouse: MOUSE, touch: TOUCH } = INPUT_TYPE;
 
         this.state = {
             smallImageWidth: 0,
             smallImageHeight: 0,
             detectedInputType: {
-                isMouseDeteced: (primaryInput === MOUSE),
-                isTouchDetected: (primaryInput === TOUCH)
+                isMouseDeteced: primaryInput === MOUSE,
+                isTouchDetected: primaryInput === TOUCH,
             },
-            isActive: false
-        }
+            isActive: false,
+        };
 
         this.onSmallImageLoad = this.onSmallImageLoad.bind(this);
         this.setSmallImageDimensionState = this.setSmallImageDimensionState.bind(this);
@@ -74,13 +67,15 @@ class ReactImageMagnify extends React.Component {
             width: requiredIf(PropTypes.number, props => !props.isFluidWidth),
             height: requiredIf(PropTypes.number, props => !props.isFluidWidth),
             onLoad: PropTypes.func,
-            onError: PropTypes.func
+            onError: PropTypes.func,
         }),
         style: PropTypes.object,
         enlargedImagePosition: PropTypes.oneOf([
             ENLARGED_IMAGE_POSITION.beside,
-            ENLARGED_IMAGE_POSITION.over
-        ])
+            ENLARGED_IMAGE_POSITION.over,
+        ]),
+        zoomWidth: PropTypes.number,
+        zoomHeight: PropTypes.number,
     };
 
     static defaultProps = {
@@ -91,15 +86,11 @@ class ReactImageMagnify extends React.Component {
         hintTextMouse: 'Hover to Zoom',
         hintTextTouch: 'Long-Touch to Zoom',
         hoverDelayInMs: 250,
-        hoverOffDelayInMs: 150
+        hoverOffDelayInMs: 150,
     };
 
     componentDidMount() {
-        const {
-            smallImage: {
-                isFluidWidth
-            }
-        } = this.props;
+        const { smallImage: { isFluidWidth } } = this.props;
 
         if (!isFluidWidth) {
             return;
@@ -114,11 +105,7 @@ class ReactImageMagnify extends React.Component {
     }
 
     onSmallImageLoad(e) {
-        const {
-            smallImage: {
-                onLoad = noop
-            }
-        } = this.props;
+        const { smallImage: { onLoad = noop } } = this.props;
 
         onLoad(e);
 
@@ -130,41 +117,32 @@ class ReactImageMagnify extends React.Component {
     }
 
     setSmallImageDimensionState() {
-        const {
-            offsetWidth: smallImageWidth,
-            offsetHeight: smallImageHeight
-        } = this.smallImageEl;
+        const { offsetWidth: smallImageWidth, offsetHeight: smallImageHeight } = this.smallImageEl;
 
         this.setState({
             smallImageWidth,
-            smallImageHeight
+            smallImageHeight,
         });
     }
 
     onDetectedInputTypeChanged(detectedInputType) {
         this.setState({
-            detectedInputType
+            detectedInputType,
         });
     }
 
     onActivationChanged({ isActive }) {
         this.setState({
-            isActive
+            isActive,
         });
     }
 
     getEnlargedImagePlacement() {
         const { enlargedImagePosition: userDefinedEnlargedImagePosition } = this.props;
-        const {
-            detectedInputType: {
-                isTouchDetected
-            }
-        } = this.state;
-        const computedEnlargedImagePosition = (
-            isTouchDetected
-                ? ENLARGED_IMAGE_POSITION.over
-                : ENLARGED_IMAGE_POSITION.beside
-        );
+        const { detectedInputType: { isTouchDetected } } = this.state;
+        const computedEnlargedImagePosition = isTouchDetected
+            ? ENLARGED_IMAGE_POSITION.over
+            : ENLARGED_IMAGE_POSITION.beside;
 
         return userDefinedEnlargedImagePosition || computedEnlargedImagePosition;
     }
@@ -191,46 +169,33 @@ class ReactImageMagnify extends React.Component {
             lensStyle,
             pressDuration,
             pressMoveThreshold,
-            smallImage: {
-                isFluidWidth: isSmallImageFluidWidth,
-                onError = noop
-            },
+            smallImage: { isFluidWidth: isSmallImageFluidWidth, onError = noop },
             style,
+            zoomWidth,
+            zoomHeight,
         } = this.props;
 
-        const {
-            smallImageWidth,
-            smallImageHeight,
-            detectedInputType: {
-                isTouchDetected
-            }
-        } = this.state;
+        const { smallImageWidth, smallImageHeight, detectedInputType: { isTouchDetected } } = this.state;
 
-        const fluidWidthSmallImage = objectAssign(
-            {},
-            this.props.smallImage,
-            {
-                width: smallImageWidth,
-                height: smallImageHeight
-            }
-        );
+        const fluidWidthSmallImage = objectAssign({}, this.props.smallImage, {
+            width: smallImageWidth,
+            height: smallImageHeight,
+        });
 
         const fixedWidthSmallImage = this.props.smallImage;
 
-        const smallImage = isSmallImageFluidWidth
-            ? fluidWidthSmallImage
-            : fixedWidthSmallImage
+        const smallImage = isSmallImageFluidWidth ? fluidWidthSmallImage : fixedWidthSmallImage;
 
         const fluidWidthContainerStyle = {
             width: 'auto',
             height: 'auto',
             fontSize: '0px',
-            position: 'relative'
-        }
+            position: 'relative',
+        };
         const fixedWidthContainerStyle = {
             width: `${smallImage.width}px`,
             height: `${smallImage.height}px`,
-            position: 'relative'
+            position: 'relative',
         };
         const priorityContainerStyle = isSmallImageFluidWidth
             ? fluidWidthContainerStyle
@@ -240,91 +205,98 @@ class ReactImageMagnify extends React.Component {
                 cursor: 'crosshair',
             },
             style,
-            priorityContainerStyle
+            priorityContainerStyle,
         );
 
         const fluidWidthSmallImageStyle = {
             width: '100%',
             height: 'auto',
             display: 'block',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
         };
         const fixedWidthSmallImageStyle = {
             width: `${smallImage.width}px`,
             height: `${smallImage.height}px`,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
         };
         const prioritySmallImageStyle = isSmallImageFluidWidth
             ? fluidWidthSmallImageStyle
             : fixedWidthSmallImageStyle;
-        const compositSmallImageStyle = objectAssign(
-            {},
-            imageStyle,
-            prioritySmallImageStyle
-        );
+        const compositSmallImageStyle = objectAssign({}, imageStyle, prioritySmallImageStyle);
 
         const enlargedImagePlacement = this.getEnlargedImagePlacement();
 
-        const shouldShowLens = (
-            enlargedImagePlacement !== ENLARGED_IMAGE_POSITION.over &&
-            !isTouchDetected
-        );
+        const shouldShowLens = enlargedImagePlacement !== ENLARGED_IMAGE_POSITION.over && !isTouchDetected;
 
         const cursorOffset = getLensCursorOffset(smallImage, largeImage);
 
         return (
-            <ReactCursorPosition { ...{
-                className,
-                hoverDelayInMs,
-                hoverOffDelayInMs,
-                isActivatedOnTouch,
-                onActivationChanged: this.onActivationChanged,
-                onDetectedInputTypeChanged: this.onDetectedInputTypeChanged,
-                pressDuration,
-                pressMoveThreshold,
-                style: compositContainerStyle
-            }}>
-                <img { ...{
-                    src: smallImage.src,
-                    srcSet: smallImage.srcSet,
-                    sizes: smallImage.sizes,
-                    alt: smallImage.alt,
-                    className: imageClassName,
-                    style: compositSmallImageStyle,
-                    ref: (el) => this.smallImageEl = el,
-                    onLoad: this.onSmallImageLoad,
-                    onError
-                }} />
-                {isHintEnabled &&
-                    <DisplayUntilActive {...{
-                        shouldHideAfterFirstActivation: shouldHideHintAfterFirstActivation
-                    }}>
-                        <HintComponent {...{
-                            isTouchDetected,
-                            hintTextMouse,
-                            hintTextTouch
-                        }}/>
+            <ReactCursorPosition
+                {...{
+                    className,
+                    hoverDelayInMs,
+                    hoverOffDelayInMs,
+                    isActivatedOnTouch,
+                    onActivationChanged: this.onActivationChanged,
+                    onDetectedInputTypeChanged: this.onDetectedInputTypeChanged,
+                    pressDuration,
+                    pressMoveThreshold,
+                    style: compositContainerStyle,
+                }}
+            >
+                <img
+                    {...{
+                        src: smallImage.src,
+                        srcSet: smallImage.srcSet,
+                        sizes: smallImage.sizes,
+                        alt: smallImage.alt,
+                        className: imageClassName,
+                        style: compositSmallImageStyle,
+                        ref: el => (this.smallImageEl = el),
+                        onLoad: this.onSmallImageLoad,
+                        onError,
+                    }}
+                />
+                {isHintEnabled && (
+                    <DisplayUntilActive
+                        {...{
+                            shouldHideAfterFirstActivation: shouldHideHintAfterFirstActivation,
+                        }}
+                    >
+                        <HintComponent
+                            {...{
+                                isTouchDetected,
+                                hintTextMouse,
+                                hintTextTouch,
+                            }}
+                        />
                     </DisplayUntilActive>
-                }
-                {shouldShowLens &&
-                    <ShadedLens {...{
+                )}
+                {shouldShowLens && (
+                    <ShadedLens
+                        {...{
+                            cursorOffset,
+                            fadeDurationInMs,
+                            smallImage,
+                            style: lensStyle,
+                        }}
+                    />
+                )}
+                <EnlargedImage
+                    {...{
+                        containerClassName: enlargedImageContainerClassName,
+                        containerStyle: enlargedImageContainerStyle,
                         cursorOffset,
                         fadeDurationInMs,
+                        imageClassName: enlargedImageClassName,
+                        imageStyle: enlargedImageStyle,
+                        imagePosition: enlargedImagePlacement,
+                        largeImage,
                         smallImage,
-                        style: lensStyle
-                    }} />
-                }
-                <EnlargedImage { ...{
-                    containerClassName: enlargedImageContainerClassName,
-                    containerStyle: enlargedImageContainerStyle,
-                    cursorOffset,
-                    fadeDurationInMs,
-                    imageClassName: enlargedImageClassName,
-                    imageStyle: enlargedImageStyle,
-                    imagePosition: enlargedImagePlacement,
-                    largeImage,
-                    smallImage
-                }}/>
+                        zoomWidth,
+                        zoomHeight,
+                    }}
+                />
             </ReactCursorPosition>
         );
     }

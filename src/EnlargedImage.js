@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 import {
     getLensModeEnlargedImageCoordinates,
-    getInPlaceEnlargedImageCoordinates
+    getInPlaceEnlargedImageCoordinates,
 } from './lib/imageCoordinates';
 import ImageShape from './prop-types/ImageShape';
 import { noop } from './utils';
@@ -19,7 +19,7 @@ export default class extends React.Component {
             isTransitionEntering: false,
             isTransitionActive: false,
             isTransitionLeaving: false,
-            isTransitionDone: false
+            isTransitionDone: false,
         };
 
         this.timers = [];
@@ -29,7 +29,7 @@ export default class extends React.Component {
 
     static defaultProps = {
         fadeDurationInMs: 0,
-        isLazyLoaded: true
+        isLazyLoaded: true,
     };
 
     static propTypes = {
@@ -44,10 +44,9 @@ export default class extends React.Component {
         isLazyLoaded: PropTypes.bool,
         largeImage: ImageShape,
         smallImage: ImageShape,
-        imagePosition: PropTypes.oneOf([
-            ENLARGED_IMAGE_POSITION.beside,
-            ENLARGED_IMAGE_POSITION.over
-        ])
+        imagePosition: PropTypes.oneOf([ENLARGED_IMAGE_POSITION.beside, ENLARGED_IMAGE_POSITION.over]),
+        zoomWidth: PropTypes.number,
+        zoomHeight: PropTypes.number,
     };
 
     componentWillReceiveProps(nextProps) {
@@ -55,17 +54,13 @@ export default class extends React.Component {
     }
 
     componentWillUnmount() {
-        this.timers.forEach((timerId) => {
+        this.timers.forEach(timerId => {
             clearTimeout(timerId);
         });
     }
 
     scheduleCssTransition(nextProps) {
-        const {
-            fadeDurationInMs,
-            isActive,
-            isPositionOutside
-        } = this.props;
+        const { fadeDurationInMs, isActive, isPositionOutside } = this.props;
         const willIsActiveChange = isActive !== nextProps.isActive;
         const willIsPositionOutsideChange = isPositionOutside !== nextProps.isPositionOutside;
 
@@ -76,27 +71,31 @@ export default class extends React.Component {
         if (nextProps.isActive && !nextProps.isPositionOutside) {
             this.setState({
                 isTrainsitionDone: false,
-                isTransitionEntering: true
+                isTransitionEntering: true,
             });
 
-            this.timers.push(setTimeout(() => {
-                this.setState({
-                    isTransitionEntering: false,
-                    isTransitionActive: true
-                });
-            }, 0));
+            this.timers.push(
+                setTimeout(() => {
+                    this.setState({
+                        isTransitionEntering: false,
+                        isTransitionActive: true,
+                    });
+                }, 0),
+            );
         } else {
             this.setState({
                 isTransitionLeaving: true,
-                isTransitionActive: false
+                isTransitionActive: false,
             });
 
-            this.timers.push(setTimeout(() => {
-                this.setState({
-                    isTransitionDone: true,
-                    isTransitionLeaving: false
-                });
-            }, fadeDurationInMs));
+            this.timers.push(
+                setTimeout(() => {
+                    this.setState({
+                        isTransitionDone: true,
+                        isTransitionLeaving: false,
+                    });
+                }, fadeDurationInMs),
+            );
         }
     }
 
@@ -105,14 +104,14 @@ export default class extends React.Component {
         const baseContainerStyle = {
             position: 'absolute',
             top: '0px',
-            overflow: 'hidden'
+            overflow: 'hidden',
         };
         const { over: OVER } = ENLARGED_IMAGE_POSITION;
         const isInPlaceMode = imagePosition === OVER;
 
         if (isInPlaceMode) {
             return objectAssign(baseContainerStyle, {
-                left: '0px'
+                left: '0px',
             });
         }
 
@@ -124,30 +123,15 @@ export default class extends React.Component {
     }
 
     getImageCoordinates() {
-        const {
-            imagePosition,
-            cursorOffset,
-            largeImage,
-            smallImage,
-            position
-        } = this.props;
+        const { imagePosition, cursorOffset, largeImage, smallImage, position } = this.props;
         const { over: OVER } = ENLARGED_IMAGE_POSITION;
         const isInPlaceMode = imagePosition === OVER;
 
         if (isInPlaceMode) {
-            return getInPlaceEnlargedImageCoordinates(
-                smallImage,
-                largeImage,
-                position
-            );
+            return getInPlaceEnlargedImageCoordinates(smallImage, largeImage, position);
         }
 
-        return getLensModeEnlargedImageCoordinates(
-            smallImage,
-            largeImage,
-            position,
-            cursorOffset
-        );
+        return getLensModeEnlargedImageCoordinates(smallImage, largeImage, position, cursorOffset);
     }
 
     render() {
@@ -159,29 +143,29 @@ export default class extends React.Component {
             imageStyle,
             isLazyLoaded,
             largeImage,
-            largeImage: {
-                onLoad = noop,
-                onError = noop
-            },
+            largeImage: { onLoad = noop, onError = noop },
             smallImage,
+            zoomHeight,
+            zoomWidth,
         } = this.props;
 
-        const {
-            isTransitionEntering,
-            isTransitionActive,
-            isTransitionLeaving
-        } = this.state;
+        const { isTransitionEntering, isTransitionActive, isTransitionLeaving } = this.state;
         const isVisible = !!(isTransitionEntering || isTransitionActive || isTransitionLeaving);
 
         const defaultContainerStyle = this.getDefaultContainerStyle();
         const computedContainerStyle = {
-            width: smallImage.width,
-            height: smallImage.height,
+            width: zoomWidth !== undefined ? zoomWidth : smallImage.width,
+            height: zoomHeight !== undefined ? zoomHeight : smallImage.height,
             opacity: this.state.isTransitionActive ? 1 : 0,
             transition: `opacity ${fadeDurationInMs}ms ease-in`,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
         };
-        const compositeContainerStyle = objectAssign({}, defaultContainerStyle, containerStyle, computedContainerStyle);
+        const compositeContainerStyle = objectAssign(
+            {},
+            defaultContainerStyle,
+            containerStyle,
+            computedContainerStyle,
+        );
 
         const imageCoordinates = this.getImageCoordinates();
         const translate = `translate(${imageCoordinates.x}px, ${imageCoordinates.y}px)`;
@@ -191,25 +175,29 @@ export default class extends React.Component {
             transform: translate,
             WebkitTransform: translate,
             msTransform: translate,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
         };
         const compositeImageStyle = objectAssign({}, imageStyle, computedImageStyle);
 
         const component = (
-            <div { ...{
-                className: containerClassName,
-                style: compositeContainerStyle
-            }}>
-                <img { ...{
-                    alt: largeImage.alt,
-                    className: imageClassName,
-                    src: largeImage.src,
-                    srcSet: largeImage.srcSet,
-                    sizes: largeImage.sizes,
-                    style: compositeImageStyle,
-                    onLoad,
-                    onError
-                }}/>
+            <div
+                {...{
+                    className: containerClassName,
+                    style: compositeContainerStyle,
+                }}
+            >
+                <img
+                    {...{
+                        alt: largeImage.alt,
+                        className: imageClassName,
+                        src: largeImage.src,
+                        srcSet: largeImage.srcSet,
+                        sizes: largeImage.sizes,
+                        style: compositeImageStyle,
+                        onLoad,
+                        onError,
+                    }}
+                />
             </div>
         );
 
